@@ -70,24 +70,16 @@ int main(int argc, char* argv[])
 
 
 		filelen = getFileSizeSystemCall(filename);
-		cout << "数据长度为  " << filelen << endl;
-
-		int invfilelen = htonl(filelen);
-		cout << "数据长度转换为网络字节序为  " << invfilelen << endl;
-
-		sendto(sclient, (char *)(&invfilelen), 4, 0, (sockaddr *)&sin, len);//发送文件长度
 
 		int tosendlen = filelen;
 
 		// 发送缓冲区中的测试数据
 		while (tosendlen > 0)
 		{
-			cout << "还有" << tosendlen << "个字节需要发送" << endl;
 			fread(sendbuf, 1, DEFAULT_BUFLEN, file);
 			int iSend = DEFAULT_BUFLEN;
 			if (tosendlen < DEFAULT_BUFLEN) iSend = tosendlen;
 			iResult = sendto(sclient, sendbuf, iSend, 0, (sockaddr *)&sin, len);
-			printf("装填成功！\n");
 
 			if (iResult == SOCKET_ERROR) {
 				printf("发送失败！错误编号: %d\n", WSAGetLastError());
@@ -95,11 +87,17 @@ int main(int argc, char* argv[])
 				WSACleanup();
 				return 1;
 			}
-			//printf("发射成功: %s(%ld)\n\n", sendbuf, iResult);
 			tosendlen -= iResult;
 		}
 
 		fclose(file);
+
+		char  * sayend = "end\0";
+		iResult = sendto(sclient, sayend, strlen(sayend)+1, 0, (sockaddr *)&sin, len);
+		if (iResult > 0)
+		{
+			cout << "客户端：数据发送完毕." << endl;
+		}
 
 		char recvData[255];
 		int ret = recvfrom(sclient, recvData, 255, 0, (sockaddr *)&sin, &len);
